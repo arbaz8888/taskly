@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      Jwt__Key: ${{ secrets.JWT_KEY }}  # maps to Jwt:Key in .NET
 
     steps:
       - name: Checkout
@@ -19,18 +21,12 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
       - name: Restore backend
         run: dotnet restore
+
       - name: Build backend
         run: dotnet build --configuration Release --no-restore
+
       - name: Test backend
         run: dotnet test --configuration Release --no-build
 
@@ -53,3 +49,12 @@ jobs:
       - name: Test frontend
         working-directory: taskly-client
         run: npm test -- --run
+
+      # (optional) sanity check the env var is present
+      - name: Check JWT env var present
+        run: |
+          if [ -z "$Jwt__Key" ]; then
+            echo "Jwt__Key missing"; exit 1
+          else
+            echo "Jwt__Key set"
+          fi
